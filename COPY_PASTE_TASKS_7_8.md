@@ -141,7 +141,7 @@ def emotion_detector(text_to_analyse):
 
 ---
 
-## TASK 7 - Activity 2: server.py Error Handling Code
+## TASK 7 - Activity 2: server.py Error Handling Code (7b_error_handling_server)
 
 **Requirement**: Submit the code from the server.py file showing the handling of blank input errors. (1 Point)
 
@@ -150,69 +150,103 @@ def emotion_detector(text_to_analyse):
 ```python
 """
 Flask web server for Emotion Detector application
+Error handling for blank input
 """
 from flask import Flask, render_template, request, jsonify
-from emotion_detection import emotion_detector
+from EmotionDetection.emotion_detection import emotion_detector
 
 app = Flask(__name__)
 
 
 @app.route("/")
-def index():
-    """Render the main page"""
+def render_index_page():
+    """Render the main page of the application"""
     return render_template("index.html")
 
 
-@app.route("/emotions", methods=["POST"])
-def analyze_emotion():
+@app.route("/emotionDetector", methods=["GET"])
+def emotion_detection():
     """
-    API endpoint to analyze emotions from text
-
-    Expected JSON payload:
-    {
-        "textToAnalyze": "text content here"
-    }
+    Flask route for emotion detection using GET method.
+    Handles blank input errors and returns formatted response.
+    
+    Query Parameters:
+        textToAnalyze (str): The text to analyze for emotions
+        
+    Returns:
+        JSON response with emotion scores or error message
     """
-    # Get the text from request
-    data = request.get_json()
-    text_to_analyze = data.get("textToAnalyze", "").strip() if data else ""
-
-    # Handle blank input
-    if not text_to_analyze:
+    # Get the text to analyze from query parameters
+    text_to_analyze = request.args.get("textToAnalyze")
+    
+    # Check for blank or empty input
+    if not text_to_analyze or text_to_analyze.strip() == "":
+        # Handle blank input error - generate formatted error response
         return jsonify({
-            "error": "Please provide non-empty text",
+            "error": "Please provide non-empty text for emotion analysis",
+            "anger": None,
+            "disgust": None,
+            "fear": None,
+            "joy": None,
+            "sadness": None,
+            "dominant_emotion": None,
             "status_code": 400
         }), 400
-
-    # Analyze emotions
+    
+    # Call the emotion_detector function with the text input
     result = emotion_detector(text_to_analyze)
-
-    # Check for errors
+    
+    # Check if emotion_detector returned a status code 400 error
     if result.get("status_code") == 400:
+        # Handle blank input error from emotion_detector
         return jsonify({
-            "error": "Invalid input",
+            "error": "Invalid input: Text could not be analyzed",
+            "anger": result.get("anger"),
+            "disgust": result.get("disgust"),
+            "fear": result.get("fear"),
+            "joy": result.get("joy"),
+            "sadness": result.get("sadness"),
+            "dominant_emotion": result.get("dominant_emotion"),
             "status_code": 400
         }), 400
-
+    
+    # Check for other non-200 status codes
     if result.get("status_code") and result.get("status_code") != 200:
         return jsonify({
-            "error": "Error analyzing emotions",
+            "error": "Error processing emotions",
+            "anger": result.get("anger"),
+            "disgust": result.get("disgust"),
+            "fear": result.get("fear"),
+            "joy": result.get("joy"),
+            "sadness": result.get("sadness"),
+            "dominant_emotion": result.get("dominant_emotion"),
             "status_code": result.get("status_code")
         }), result.get("status_code", 500)
-
-    # Return the emotion analysis
-    return jsonify(result), 200
-
-
-@app.route("/health", methods=["GET"])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({"status": "healthy"}), 200
+    
+    # Format and return the successful response with all emotion scores
+    formatted_response = {
+        "anger": result.get("anger"),
+        "disgust": result.get("disgust"),
+        "fear": result.get("fear"),
+        "joy": result.get("joy"),
+        "sadness": result.get("sadness"),
+        "dominant_emotion": result.get("dominant_emotion")
+    }
+    
+    return jsonify(formatted_response), 200
 
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
 ```
+
+**Key Requirements Met:**
+✅ Route definition: `/emotionDetector` with GET method
+✅ Blank input error handling: Checks `if not text_to_analyze or text_to_analyze.strip() == ""`
+✅ Formatted response string: Returns JSON with all emotion fields + error message for blank input
+✅ Input argument handling: Gets text from `request.args.get("textToAnalyze")`
+✅ Status code 400 handling: Returns 400 status code for blank/invalid input
+✅ Proper error responses: Generates formatted response as required
 
 ---
 
