@@ -1,4 +1,6 @@
-# Emotion Detector
+# Final Project: Emotion Detector
+
+**Project Name: Final Project**
 
 A Flask-based emotion detection application using IBM Watson NLP to analyze sentiment and emotions from text input.
 
