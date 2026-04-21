@@ -202,24 +202,166 @@ Python 3.14.2 (...)
 
 ## TASK 3: Format the Output
 
-### Activity 1: Code from emotion_detection.py Showing Correct Output Format (1 Point)
+### Activity 1: Code from emotion_detection.py Showing Correct Output Format (3a_output_formatting) (1 Point)
 
-**Output Format Implementation** (see lines 25-28, 59-68, 75-84, 98-108):
+**File: 3a_output_formatting.py - Modified emotion_detector function with correct output format**
 
-The `emotion_detector()` function returns a consistently formatted dictionary with the following structure:
+The `emotion_detector(text_to_analyze)` function implements all required elements:
 
 ```python
-# For successful API response:
+"""
+Emotion Detection module using IBM Watson NLP
+Modified emotion_detector function with correct output format
+"""
+import requests  # ✅ KEY ELEMENT 1: Uses requests library
+
+
+def emotion_detector(text_to_analyze):
+    """
+    Detect emotions in the provided text using Watson NLP API.
+    
+    Sends a POST request to the Watson NLP API endpoint with the text input,
+    processes the JSON response, and returns formatted emotion scores.
+
+    Args:
+        text_to_analyze (str): The text to analyze for emotions
+
+    Returns:
+        dict: Contains emotion scores (anger, disgust, fear, joy, sadness), 
+              dominant emotion, and status code
+    """
+
+    # Check for blank or None input
+    if not text_to_analyze or text_to_analyze.strip() == "":
+        return {
+            "anger": None,
+            "disgust": None,
+            "fear": None,
+            "joy": None,
+            "sadness": None,
+            "dominant_emotion": None,
+            "status_code": 400
+        }
+
+    # Watson NLP API endpoint
+    url = "https://api.us-south.natural-language-understanding.watson.cloud.ibm.com/instances/9ccb4dc7-69a2-4302-821e-d17f2b185c36"
+
+    # ✅ KEY ELEMENT 3: Specific HTTP request header with Content-Type
+    headers = {
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    }
+
+    # ✅ KEY ELEMENT 4: Collect input text as a JSON object (payload)
+    payload = {
+        "raw_document": {
+            "text": text_to_analyze
+        },
+        "features": {
+            "emotion": {}
+        }
+    }
+
+    try:
+        # ✅ KEY ELEMENT 2: Sends a POST request to Watson API using requests
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
+
+        # Handle HTTP error responses
+        if response.status_code == 400:
+            return {
+                "anger": None,
+                "disgust": None,
+                "fear": None,
+                "joy": None,
+                "sadness": None,
+                "dominant_emotion": None,
+                "status_code": 400
+            }
+
+        if response.status_code != 200:
+            return {
+                "anger": None,
+                "disgust": None,
+                "fear": None,
+                "joy": None,
+                "sadness": None,
+                "dominant_emotion": None,
+                "status_code": response.status_code
+            }
+
+        # ✅ KEY ELEMENT 5a: Process the JSON response from Watson API
+        response_json = response.json()
+
+        # Extract emotion scores from the nested JSON response
+        emotion_data = response_json.get("emotion", {}).get("document", {}).get("emotion", {})
+
+        # Extract individual emotion scores from response
+        anger = emotion_data.get("anger", 0)
+        disgust = emotion_data.get("disgust", 0)
+        fear = emotion_data.get("fear", 0)
+        joy = emotion_data.get("joy", 0)
+        sadness = emotion_data.get("sadness", 0)
+
+        # Find dominant emotion (highest score)
+        emotions = {
+            "anger": anger,
+            "disgust": disgust,
+            "fear": fear,
+            "joy": joy,
+            "sadness": sadness
+        }
+
+        dominant_emotion = max(emotions, key=emotions.get)
+
+        # ✅ KEY ELEMENT 5b: Return the formatted result with correct output structure
+        return {
+            "anger": anger,
+            "disgust": disgust,
+            "fear": fear,
+            "joy": joy,
+            "sadness": sadness,
+            "dominant_emotion": dominant_emotion
+        }
+
+    except requests.exceptions.RequestException:
+        # Handle network errors
+        return {
+            "anger": None,
+            "disgust": None,
+            "fear": None,
+            "joy": None,
+            "sadness": None,
+            "dominant_emotion": None,
+            "status_code": 500
+        }
+```
+
+**KEY ELEMENTS VERIFIED:**
+1. ✅ **Uses requests library** - `import requests` line 5, `requests.post()` line 53
+2. ✅ **POST request to Watson API** - `requests.post(url, headers=headers, json=payload, timeout=10)`
+3. ✅ **Specific HTTP request header** - Headers include `Content-Type: application/json` for JSON communication
+4. ✅ **Collecting input text as JSON object** - Payload structure with `raw_document.text` as JSON
+5. ✅ **Processing JSON response** - `response.json()` parsing and extraction of emotion data
+6. ✅ **Returning formatted result** - Returns correctly structured dictionary with all 5 emotions + dominant_emotion
+
+**Output Format Structure:**
+```python
+# Success Response:
 {
-    "anger": float,        # Anger emotion score (0-1)
-    "disgust": float,      # Disgust emotion score (0-1)
-    "fear": float,         # Fear emotion score (0-1)
-    "joy": float,          # Joy emotion score (0-1)
-    "sadness": float,      # Sadness emotion score (0-1)
-    "dominant_emotion": str  # Name of highest scoring emotion
+    "anger": float,              # Anger emotion score (0-1)
+    "disgust": float,            # Disgust emotion score (0-1)
+    "fear": float,               # Fear emotion score (0-1)
+    "joy": float,                # Joy emotion score (0-1)
+    "sadness": float,            # Sadness emotion score (0-1)
+    "dominant_emotion": string   # Emotion with highest score
 }
 
-# For error cases (blank input, invalid input, API errors):
+# Error Response:
 {
     "anger": None,
     "disgust": None,
@@ -227,22 +369,9 @@ The `emotion_detector()` function returns a consistently formatted dictionary wi
     "joy": None,
     "sadness": None,
     "dominant_emotion": None,
-    "status_code": int     # HTTP status code (400, 401, 500, etc.)
+    "status_code": 400  # HTTP status code
 }
 ```
-
-**Format Details:**
-1. Always includes all 5 emotion keys: anger, disgust, fear, joy, sadness
-2. Always includes dominant_emotion field
-3. Returns numeric scores (0-1) for successful responses
-4. Returns None values with status_code for error cases
-5. Consistent JSON structure across all usage scenarios
-
-**Code Sections Implementing Format:**
-- Lines 25-28: Blank input handling - returns formatted error response
-- Lines 59-68: HTTP 400 error - returns formatted error response  
-- Lines 75-84: Non-200 status codes - returns formatted error response
-- Lines 98-108: Success case - returns formatted emotion scores with dominant emotion
 
 ---
 
